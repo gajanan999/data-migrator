@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Data Migrator</title>
+  <style>
+    /* CSS styles */
+
+    body {
+      background-color: #f2f2f2;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+
+    .container {
+      max-width: 80%; /*Update the max-width value as per your needs */
+      margin: 50px auto;
+      padding: 20px;
+      background-color: #fff;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+
+    h2 {
+      margin-top: 20px;
+      color: #333;
+    }
+
+    ul {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    li {
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th,
+    td {
+      padding: 8px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+
+    th {
+      background-color: #f2f2f2;
+      font-weight: bold;
+    }
+
+    tbody tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+
+
+     .table-container {
+    max-height: 320px; /* Adjust the height as per your needs */
+    overflow-y: auto;
+  }
+
+  .fixed-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background-color: #f2f2f2;
+  }
+
+  .scrollable-table {
+    width: 100%;
+    border-collapse: collapse;
+    border-top: none; /* To remove extra border on top */
+  }
+    /* Style for the select dropdown */
+  select.category-dropdown {
+    width: 100%;
+    padding: 6px;
+    border-radius: 4px;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    color: #333;
+  }
+
+    /* Style for the submit button */
+    button.submit-button {
+      padding: 10px 20px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    /* Flexbox layout for the button container */
+    .button-container {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 20px;
+    }
+  </style>
+
+</head>
+<body>
+  <div class="container">
+    <h1>Data Migrator</h1>
+    <h2>Transaction Types:</h2>
+    <ul>
+      {% for category in categories %}
+        <li>{{ category }}</li>
+      {% endfor %}
+    </ul>
+
+    <h2>Total Spent by Category:</h2>
+    <div class="table-container">
+      <table class="fixed-header">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Beguenstigter</th>
+            <th>Buchungstext</th>
+            <th>Verwendungszweck</th>
+            <th>Total Spent</th>
+          </tr>
+        </thead>
+      </table>
+      <table class="scrollable-table">
+        <tbody>
+          {% for (category, Beguenstigter, buchungstext, verwendungszweck), total_spent in grouped_data.items() %}
+            <tr>
+              <td>
+                <select class="category-dropdown" data-default="{{ category }}">
+                  {% for cat in main_categories %}
+                    <option value="{{ cat }}" {% if cat == category %}selected{% endif %}>{{ cat }}</option>
+                  {% endfor %}
+                </select>
+              </td>
+              <td>{{ Beguenstigter }}</td>
+              <td>{{ buchungstext }}</td>
+              <td>{{ verwendungszweck }}</td>
+              <td>{{ total_spent }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+    </div>
+    <div class="button-container">
+      <button class="submit-button" onclick="submitCategories()">Submit Categories</button>
+    </div>
+    <h2>Total Spent:</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Total Spent</th>
+        </tr>
+      </thead>
+      <tbody>
+         {% for row in category_grouped_data.itertuples() %}
+          <tr>
+            <td>{{ row.Category }}</td>
+            <td>{{ row.Betrag }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+<script>
+    // JavaScript to handle the "Submit Categories" button click
+    function submitCategories() {
+      const rows = document.querySelectorAll('.scrollable-table tbody tr');
+      const selectedCategories = [];
+
+      rows.forEach((row) => {
+        const categoryCell = row.querySelector('td:first-child select');
+        const selectedCategory = categoryCell.value;
+        const rowData = {
+          category: selectedCategory,
+          recipient: row.cells[1].textContent,
+          booking_text: row.cells[2].textContent,
+          purpose_of_transaction: row.cells[3].textContent,
+          total_spent: row.cells[4].textContent,
+        };
+        selectedCategories.push(rowData);
+      });
+
+      // Send the selectedCategories data to the API (replace the API_URL with your actual API endpoint)
+      const API_URL = '/submit-categories';
+      fetch(API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(selectedCategories),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          console.log('Response from the API:', data);
+          // Perform any further actions or show a success message if needed
+        })
+        .catch((error) => {
+          console.error('Error sending data to the API:', error);
+          // Handle the error, show an error message, etc.
+        });
+    }
+  </script>
+</body>
+</html>
